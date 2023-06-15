@@ -42,7 +42,7 @@
 }
 
 .kid {
-  min-width: 24px;
+  /* min-width: 24px; */
   min-height: 12px;
   background-color: #804545;
   padding: 0 2em;

@@ -12,47 +12,122 @@ type NewChild = {
 
 
 function App() {
-  
-  const [cursorAt, setCursorAt] = useState<string>('div-0-0');
-  
+
+  const [cursorAt, setCursorAt] = useState<string>('div-0');
+  const [cursorFocused, setCursorFocused] = useState<boolean>(false);
+  // const [display, setDisplay] = useState<string>('block');
+
+  const updateDisplay = (display: string) => {
+    if (display === 'block') {
+      return 'inline';
+    }
+    if (display === 'inline') {
+      return 'inline-block';
+    }
+    if (display === 'inline-block') {
+      return 'flex';
+    }
+    if (display === 'flex') {
+      return 'inline-flex';
+    }
+    if (display === 'inline-flex') {
+      return 'grid';
+    }
+    if (display === 'grid') {
+      return 'inline-grid';
+    }
+    if (display === 'inline-grid') {
+      return 'flow-root';
+    }
+    else {
+      return 'block';
+    }
+  }
+
   const updateCursorAt = (id: string) => {
     document.getElementById(cursorAt)?.classList.remove('focused');
     setCursorAt(id);
     document.getElementById(id)?.classList.add('focused');
   }
-  
+
+  const onFocused = (event: any) => {
+    setCursorAt(event.target.id);
+    setCursorFocused(true);
+  }
+
+  const onBlur = (event: any) => {
+    setCursorFocused(false);
+  }
+
   const onKeyDownBody = (event: any) => {
     // event.preventDefault();
-    const key = event.code;
-    if (key === 'KeyJ' && cursorAt) {
-      const id: string | undefined = document.getElementById(cursorAt)?.nextElementSibling?.id;
-      if (id) {
-        // setCurrFocused(id);
-        updateCursorAt(id);
+    if (!cursorFocused) {
+      const key = event.code;
+      if (key === 'KeyA' && cursorAt) {
+        const id: string | undefined = document.getElementById(cursorAt)?.parentElement?.id;
+        if (id) {
+          updateCursorAt(id);
+        }
+        
       }
-    }
-    if (key === 'KeyK' && cursorAt) {
-      const id: string | undefined = document.getElementById(cursorAt)?.previousElementSibling?.id;
-      if (id) {
-        updateCursorAt(id);
+      if (key === 'KeyJ' && cursorAt) {
+        const id: string | undefined = document.getElementById(cursorAt)?.nextElementSibling?.id;
+        if (id) {
+          // setCurrFocused(id);
+          updateCursorAt(id);
+        }
       }
-    }
-    if (key === 'Enter' && cursorAt) {
-      event.preventDefault();
-      document.getElementById(cursorAt)?.focus();
-    }
+      if (key === 'KeyK' && cursorAt) {
+        const id: string | undefined = document.getElementById(cursorAt)?.previousElementSibling?.id;
+        if (id) {
+          updateCursorAt(id);
+        }
+      }
+      if (key === 'KeyL' && cursorAt) {
+        const ele = document.getElementById(cursorAt);
+        if (ele) {
+          ele.style.display = updateDisplay(ele.style.display);
+        }
 
-      // console.log(event.code)
+      }
+      if (key === 'Enter' && cursorAt) {
+        event.preventDefault();
+        document.getElementById(cursorAt)?.focus();
+      }
+      if (key === 'KeyD' && cursorAt) {
+        event.preventDefault();
+        let ele = document.getElementById(cursorAt);
+        if (ele) {
+          let parent = ele.parentElement;
+
+          let child = document.createElement('div');
+          child.className = 'kid';
+
+          const id = cursorAt;
+          const parts = id.split('-');
+          let prefix = parts.filter((p: string) => !Number(p));
+          const suffix = prefix.at(-1);
+          const childId = [...prefix, suffix].join('-');
+
+          child.setAttribute('id', childId);
+          ele.setAttribute('id', `${childId}-0`);
+
+          child.addEventListener('focusin', onFocused);
+
+          parent?.replaceChild(child, ele);
+          child.appendChild(ele);
+        }
+      }
+
+
+    }
+    console.log(event.code)
     // event.preventDefault();
   }
 
-  useKey(['KeyJ', 'KeyK', 'Enter'], onKeyDownBody);
+  useKey(['KeyA','KeyJ', 'KeyK', 'KeyL', 'Enter', 'KeyD'], onKeyDownBody);
   // document.addEventListener('keydown', onKeyDownBody);
-  
-  const onFocused = (event: any) => {
-    setCursorAt(event.target.id)
-  }
-  
+
 
   const onKeyDown = (event: any) => {
     if (event.code === 'Enter') {
@@ -64,13 +139,14 @@ function App() {
 
       const id = event.target.id;
       const parts = id.split('-');
-      const prefix = parts.slice(0,parts.length - 1).join('-');
+      const prefix = parts.slice(0, parts.length - 1).join('-');
       const suffix = Number(parts.at(-1)) + 1;
 
       child.setAttribute('id', `${prefix}-${suffix}`);
-      
+
       child.addEventListener('keydown', onKeyDown);
       child.addEventListener('focusin', onFocused);
+      child.addEventListener('focusout', onBlur);
       event.target.parentElement.insertBefore(child, event.target.nextSibling);
       // event.target.focusout();
       child.focus();
@@ -84,31 +160,31 @@ function App() {
 
   return (
     <>
-    <div id='commandLine'
-    className='cmd'
-    contentEditable='true'
-    data-placeholder='CMD'
-    >
+      <div id='commandLine'
+        className='cmd'
+        contentEditable='true'
+        data-placeholder='CMD'
+      >
 
-    </div>
-      <div id="div-0">
-        <div 
-        className='kid' 
-        id='div-0-0' 
-        contentEditable="true" 
-        onKeyDown={onKeyDown}
-        onFocus={onFocused}
-        data-placeholder='Input'
-        > 
+      </div>
+      <div id="div">
+        <div
+          className='kid'
+          id='div-0'
+          contentEditable="true"
+          onKeyDown={onKeyDown}
+          onFocus={onFocused}
+          data-placeholder='Input'
+        >
         </div>
       </div>
-      <button onClick={() => {}}>
+      <button onClick={() => { }}>
         Button
       </button>
       <div id='abc'>
-      {
-        document.getElementById(cursorAt)?.innerText
-      }
+        {
+          document.getElementById(cursorAt)?.innerText
+        }
       </div>
     </>
   )
