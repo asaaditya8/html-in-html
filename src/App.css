@@ -45,4 +45,22 @@
   min-width: 24px;
   min-height: 12px;
   background-color: #804545;
+  padding: 0 2em;
+  border: solid 1px transparent;
+  box-sizing: border-box;
+}
+
+[data-placeholder]:empty:before{
+  content: attr(data-placeholder);
+  color: #888;
+  font-style: italic;
+}
+
+.focused {
+  border: solid 1px #1ee;
+}
+
+.cmd {
+  background-color: aquamarine;
+  color: #000;
 }
