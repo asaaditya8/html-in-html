@@ -59,9 +59,9 @@ function App() {
     setCursorFocused(false);
   }
 
-  const addParent = (ele: HTMLElement) => {
+  const addParent = (ele: Element) => {
     // reindex all children
-    
+
     // take parent call it grand parent
     let grandParent = ele.parentElement;
 
@@ -74,14 +74,19 @@ function App() {
     grandParent?.replaceChild(parent, ele);
 
     parent.appendChild(ele);
-    
-    let children = parent.children;
-    for (let i = 0; i < children.length; i++) {
-      const suffix = `div-${i}`;
-      const childId = [id, suffix].join(':');
-      children[i].setAttribute('id', childId);
+
+    const reindex = (parent: Element) => {
+
+      let children = parent.children;
+      for (let i = 0; i < children.length; i++) {
+        const suffix = `${i}`;
+        const childId = [parent.id, suffix].join(':');
+        children[i].setAttribute('id', childId);
+        reindex(children[i]);
+      }
     }
 
+    reindex(parent);
 
   }
 
@@ -124,6 +129,7 @@ function App() {
         event.preventDefault();
         let ele = document.getElementById(cursorAt);
         if (ele) {
+          addParent(ele);
         }
       }
 
@@ -145,12 +151,33 @@ function App() {
       child.setAttribute('contentEditable', 'true');
       child.setAttribute('data-placeholder', 'Input');
 
-      const id = event.target.id;
-      const parts = id.split('-');
-      const prefix = parts.slice(0, parts.length - 1).join('-');
-      const suffix = Number(parts.at(-1)) + 1;
+      const id: string = event.target.id;
+      const nextElementId: string | undefined = event.target.nextElementSibling?.id;
+      let id2 = '';
 
-      child.setAttribute('id', `${prefix}-${suffix}`);
+      if (!nextElementId || id.length > nextElementId.length) {
+        const posLastColon = id.lastIndexOf(':');
+        const posLastHyphen = id.lastIndexOf('*');
+        const posLast = Math.max(posLastColon, posLastHyphen);
+        const prefix = id.slice(0, posLast + 1);
+        const suffix = Number(id.slice(posLast + 1, id.length)) + 1;
+        id2 = `${prefix}${suffix}`;
+      } 
+      else if ( id.length < nextElementId.length ) {
+        const posLastColon = nextElementId.lastIndexOf(':');
+        const posLastHyphen = nextElementId.lastIndexOf('*');
+        const posLast = Math.max(posLastColon, posLastHyphen);
+        const prefix = nextElementId.slice(0, posLast + 1);
+        const suffix = Number(nextElementId.slice(posLast + 1, nextElementId.length)) - 1;
+        id2 = `${prefix}${suffix}`;
+      }
+      else if ( id.length === nextElementId.length ) {
+        id2 = `${id}*${0}`;
+      } else {
+        alert('Error in onKeyDown, could not calculate id, given conditions were not met')
+      }
+
+      child.setAttribute('id', id2);
 
       child.addEventListener('keydown', onKeyDown);
       child.addEventListener('focusin', onFocused);
@@ -178,7 +205,7 @@ function App() {
       <div id="div">
         <div
           className='kid'
-          id='div-0'
+          id='div*0'
           contentEditable="true"
           onKeyDown={onKeyDown}
           onFocus={onFocused}
