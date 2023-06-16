@@ -135,19 +135,49 @@ function App() {
     reindex(sibling);
     target.parentElement?.insertBefore(sibling, target.nextSibling);
   }
-  
+
   const addClassToLeaves = (element: HTMLElement, cls: string) => {
     if (element.isContentEditable) {
-      element.innerText = '';
       element.classList.add(cls);
+    }
+
+    const children = element.childNodes;
+    for (let i = 0; i < children.length; i++) {
+      addClassToLeaves(children[i], cls);
     }
   }
 
+  const cloneElement = (element: Element) => {
+    let clone = element.cloneNode(true);
+
+    const addListeners = (element: Element) => {
+      if (element.isContentEditable) {
+        element.addEventListener('keydown', onKeyDown);
+        element.addEventListener('focusin', onFocused);
+        element.addEventListener('focusout', onBlur);
+      } else {
+        element.addEventListener('focusin', onFocused);
+      }
+
+      const children = element.childNodes;
+      for (let i = 0; i < children.length; i++) {
+        addListeners(children[i]);
+      }
+
+    }
+    
+    addListeners(clone);
+    return clone;
+  }
+
   const clearContent = (element: HTMLElement) => {
-    addClassToLeaves(element, 'empty');
+
+    if (element.isContentEditable) {
+      element.textContent = '';
+    }
 
     const children = element.childNodes;
-    for (let i=0; i < children.length; i++) {
+    for (let i = 0; i < children.length; i++) {
       clearContent(children[i]);
     }
   }
@@ -199,8 +229,9 @@ function App() {
         event.preventDefault();
         const ele = document.getElementById(cursorAt);
         if (ele && register[0]) {
-          let sibling = register[0].cloneNode(true);
+          let sibling = cloneElement(register[0]);
           clearContent(sibling);
+          addClassToLeaves(sibling, 'empty');
           addSibling(ele, sibling);
         }
       }

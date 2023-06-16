@@ -58,8 +58,8 @@
 }
 
 .focused {
-  border: solid 1px #1ee;
-}
+  border: solid 1px #1ee !important;
+ }
 
 .empty {
   border: dotted 1px rgb(209, 209, 209);
