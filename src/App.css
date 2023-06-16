@@ -61,6 +61,10 @@
   border: solid 1px #1ee;
 }
 
+.empty {
+  border: dotted 1px rgb(209, 209, 209);
+}
+
 .cmd {
   background-color: aquamarine;
   color: #000;

@@ -15,6 +15,7 @@ function App() {
 
   const [cursorAt, setCursorAt] = useState<string>('div-0');
   const [cursorFocused, setCursorFocused] = useState<boolean>(false);
+  const [register, registerControls] = useArrayState<Element | null>([null, null, null, null, null]);
   // const [display, setDisplay] = useState<string>('block');
 
   const updateDisplay = (display: string) => {
@@ -59,6 +60,18 @@ function App() {
     setCursorFocused(false);
   }
 
+  const reindex = (parent: Element) => {
+
+    let children = parent.children;
+    for (let i = 0; i < children.length; i++) {
+      const suffix = `${i}`;
+      const childId = [parent.id, suffix].join(':');
+      children[i].setAttribute('id', childId);
+      reindex(children[i]);
+    }
+  }
+
+
   const addParent = (ele: Element) => {
     // reindex all children
 
@@ -75,59 +88,68 @@ function App() {
 
     parent.appendChild(ele);
 
-    const reindex = (parent: Element) => {
-
-      let children = parent.children;
-      for (let i = 0; i < children.length; i++) {
-        const suffix = `${i}`;
-        const childId = [parent.id, suffix].join(':');
-        children[i].setAttribute('id', childId);
-        reindex(children[i]);
-      }
-    }
-
     reindex(parent);
 
   }
+
+  const createNewSibling = () => {
+    let child = document.createElement('div');
+    child.className = 'kid';
+    child.setAttribute('contentEditable', 'true');
+    child.setAttribute('data-placeholder', 'Input');
+    child.addEventListener('keydown', onKeyDown);
+    child.addEventListener('focusin', onFocused);
+    child.addEventListener('focusout', onBlur);
+    return child
+  }
+
+  const addSibling = (target: Element, sibling: Element) => {
+
+    const id: string = target.id;
+    const nextElementId: string | undefined = target.nextElementSibling?.id;
+    let id2 = '';
+
+    if (!nextElementId || id.length > nextElementId.length) {
+      const posLastColon = id.lastIndexOf(':');
+      const posLastHyphen = id.lastIndexOf('*');
+      const posLast = Math.max(posLastColon, posLastHyphen);
+      const prefix = id.slice(0, posLast + 1);
+      const suffix = Number(id.slice(posLast + 1, id.length)) + 1;
+      id2 = `${prefix}${suffix}`;
+    }
+    else if (id.length < nextElementId.length) {
+      const posLastColon = nextElementId.lastIndexOf(':');
+      const posLastHyphen = nextElementId.lastIndexOf('*');
+      const posLast = Math.max(posLastColon, posLastHyphen);
+      const prefix = nextElementId.slice(0, posLast + 1);
+      const suffix = Number(nextElementId.slice(posLast + 1, nextElementId.length)) - 1;
+      id2 = `${prefix}${suffix}`;
+    }
+    else if (id.length === nextElementId.length) {
+      id2 = `${id}*${0}`;
+    } else {
+      alert('Error in onKeyDown, could not calculate id, given conditions were not met')
+    }
+
+    sibling.setAttribute('id', id2);
+    reindex(sibling);
+    target.parentElement?.insertBefore(sibling, target.nextSibling);
+  }
   
-  const addSibling = (target: Element) => {
-      let child = document.createElement('div');
-      child.className = 'kid';
-      child.setAttribute('contentEditable', 'true');
-      child.setAttribute('data-placeholder', 'Input');
+  const addClassToLeaves = (element: HTMLElement, cls: string) => {
+    if (element.isContentEditable) {
+      element.innerText = '';
+      element.classList.add(cls);
+    }
+  }
 
-      const id: string = target.id;
-      const nextElementId: string | undefined = target.nextElementSibling?.id;
-      let id2 = '';
+  const clearContent = (element: HTMLElement) => {
+    addClassToLeaves(element, 'empty');
 
-      if (!nextElementId || id.length > nextElementId.length) {
-        const posLastColon = id.lastIndexOf(':');
-        const posLastHyphen = id.lastIndexOf('*');
-        const posLast = Math.max(posLastColon, posLastHyphen);
-        const prefix = id.slice(0, posLast + 1);
-        const suffix = Number(id.slice(posLast + 1, id.length)) + 1;
-        id2 = `${prefix}${suffix}`;
-      } 
-      else if ( id.length < nextElementId.length ) {
-        const posLastColon = nextElementId.lastIndexOf(':');
-        const posLastHyphen = nextElementId.lastIndexOf('*');
-        const posLast = Math.max(posLastColon, posLastHyphen);
-        const prefix = nextElementId.slice(0, posLast + 1);
-        const suffix = Number(nextElementId.slice(posLast + 1, nextElementId.length)) - 1;
-        id2 = `${prefix}${suffix}`;
-      }
-      else if ( id.length === nextElementId.length ) {
-        id2 = `${id}*${0}`;
-      } else {
-        alert('Error in onKeyDown, could not calculate id, given conditions were not met')
-      }
-
-      child.setAttribute('id', id2);
-
-      child.addEventListener('keydown', onKeyDown);
-      child.addEventListener('focusin', onFocused);
-      child.addEventListener('focusout', onBlur);
-      return child;
+    const children = element.childNodes;
+    for (let i=0; i < children.length; i++) {
+      clearContent(children[i]);
+    }
   }
 
   const onKeyDownBody = (event: any) => {
@@ -142,6 +164,7 @@ function App() {
 
       }
       if (key === 'KeyJ' && cursorAt) {
+        event.preventDefault();
         const id: string | undefined = document.getElementById(cursorAt)?.nextElementSibling?.id;
         if (id) {
           // setCurrFocused(id);
@@ -149,17 +172,37 @@ function App() {
         }
       }
       if (key === 'KeyK' && cursorAt) {
+        event.preventDefault();
         const id: string | undefined = document.getElementById(cursorAt)?.previousElementSibling?.id;
         if (id) {
           updateCursorAt(id);
         }
       }
       if (key === 'KeyL' && cursorAt) {
+        event.preventDefault();
         const ele = document.getElementById(cursorAt);
         if (ele) {
           ele.style.display = updateDisplay(ele.style.display);
         }
 
+      }
+      if (key === 'KeyY' && cursorAt) {
+        event.preventDefault();
+        const ele = document.getElementById(cursorAt);
+        if (ele) {
+          registerControls.replaceItemAtIndex(0, ele);
+        }
+      }
+      if (key === 'KeyP' && cursorAt) {
+        // behaviour of paste ??
+        // lets experiment with only layout
+        event.preventDefault();
+        const ele = document.getElementById(cursorAt);
+        if (ele && register[0]) {
+          let sibling = register[0].cloneNode(true);
+          clearContent(sibling);
+          addSibling(ele, sibling);
+        }
       }
       if (key === 'Enter' && cursorAt) {
         event.preventDefault();
@@ -179,22 +222,24 @@ function App() {
     // event.preventDefault();
   }
 
-  useKey(['KeyA', 'KeyJ', 'KeyK', 'KeyL', 'Enter', 'KeyD'], onKeyDownBody);
+  useKey(['KeyA', 'KeyY', 'KeyP', 'KeyJ', 'KeyK', 'KeyL', 'Enter', 'KeyD'], onKeyDownBody);
   // document.addEventListener('keydown', onKeyDownBody);
 
 
   const onKeyDown = (event: any) => {
     if (event.code === 'Enter') {
       event.preventDefault();
-      
-      const child = addSibling(event.target);
-      event.target.parentElement.insertBefore(child, event.target.nextSibling);
+
+      const sibling = createNewSibling();
+      addSibling(event.target, sibling);
       // event.target.focusout();
-      child.focus();
+      sibling.focus();
     }
     if (event.code === 'Escape') {
       event.preventDefault();
       event.target.blur();
+    } else {
+      event.target.classList.remove('empty');
     }
     // console.log(document.activeElement);
   };
