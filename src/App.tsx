@@ -59,6 +59,32 @@ function App() {
     setCursorFocused(false);
   }
 
+  const addParent = (ele: HTMLElement) => {
+    // reindex all children
+    
+    // take parent call it grand parent
+    let grandParent = ele.parentElement;
+
+    let parent = document.createElement('div');
+    parent.className = 'kid';
+    parent.addEventListener('focusin', onFocused);
+
+    const id = ele.id;
+    parent.setAttribute('id', id);
+    grandParent?.replaceChild(parent, ele);
+
+    parent.appendChild(ele);
+    
+    let children = parent.children;
+    for (let i = 0; i < children.length; i++) {
+      const suffix = `div-${i}`;
+      const childId = [id, suffix].join(':');
+      children[i].setAttribute('id', childId);
+    }
+
+
+  }
+
   const onKeyDownBody = (event: any) => {
     // event.preventDefault();
     if (!cursorFocused) {
@@ -68,7 +94,7 @@ function App() {
         if (id) {
           updateCursorAt(id);
         }
-        
+
       }
       if (key === 'KeyJ' && cursorAt) {
         const id: string | undefined = document.getElementById(cursorAt)?.nextElementSibling?.id;
@@ -98,24 +124,6 @@ function App() {
         event.preventDefault();
         let ele = document.getElementById(cursorAt);
         if (ele) {
-          let parent = ele.parentElement;
-
-          let child = document.createElement('div');
-          child.className = 'kid';
-
-          const id = cursorAt;
-          const parts = id.split('-');
-          let prefix = parts.filter((p: string) => !Number(p));
-          const suffix = prefix.at(-1);
-          const childId = [...prefix, suffix].join('-');
-
-          child.setAttribute('id', childId);
-          ele.setAttribute('id', `${childId}-0`);
-
-          child.addEventListener('focusin', onFocused);
-
-          parent?.replaceChild(child, ele);
-          child.appendChild(ele);
         }
       }
 
@@ -125,7 +133,7 @@ function App() {
     // event.preventDefault();
   }
 
-  useKey(['KeyA','KeyJ', 'KeyK', 'KeyL', 'Enter', 'KeyD'], onKeyDownBody);
+  useKey(['KeyA', 'KeyJ', 'KeyK', 'KeyL', 'Enter', 'KeyD'], onKeyDownBody);
   // document.addEventListener('keydown', onKeyDownBody);
 
 
