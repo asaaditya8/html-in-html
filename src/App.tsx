@@ -89,6 +89,46 @@ function App() {
     reindex(parent);
 
   }
+  
+  const addSibling = (target: Element) => {
+      let child = document.createElement('div');
+      child.className = 'kid';
+      child.setAttribute('contentEditable', 'true');
+      child.setAttribute('data-placeholder', 'Input');
+
+      const id: string = target.id;
+      const nextElementId: string | undefined = target.nextElementSibling?.id;
+      let id2 = '';
+
+      if (!nextElementId || id.length > nextElementId.length) {
+        const posLastColon = id.lastIndexOf(':');
+        const posLastHyphen = id.lastIndexOf('*');
+        const posLast = Math.max(posLastColon, posLastHyphen);
+        const prefix = id.slice(0, posLast + 1);
+        const suffix = Number(id.slice(posLast + 1, id.length)) + 1;
+        id2 = `${prefix}${suffix}`;
+      } 
+      else if ( id.length < nextElementId.length ) {
+        const posLastColon = nextElementId.lastIndexOf(':');
+        const posLastHyphen = nextElementId.lastIndexOf('*');
+        const posLast = Math.max(posLastColon, posLastHyphen);
+        const prefix = nextElementId.slice(0, posLast + 1);
+        const suffix = Number(nextElementId.slice(posLast + 1, nextElementId.length)) - 1;
+        id2 = `${prefix}${suffix}`;
+      }
+      else if ( id.length === nextElementId.length ) {
+        id2 = `${id}*${0}`;
+      } else {
+        alert('Error in onKeyDown, could not calculate id, given conditions were not met')
+      }
+
+      child.setAttribute('id', id2);
+
+      child.addEventListener('keydown', onKeyDown);
+      child.addEventListener('focusin', onFocused);
+      child.addEventListener('focusout', onBlur);
+      return child;
+  }
 
   const onKeyDownBody = (event: any) => {
     // event.preventDefault();
@@ -146,42 +186,8 @@ function App() {
   const onKeyDown = (event: any) => {
     if (event.code === 'Enter') {
       event.preventDefault();
-      let child = document.createElement('div');
-      child.className = 'kid';
-      child.setAttribute('contentEditable', 'true');
-      child.setAttribute('data-placeholder', 'Input');
-
-      const id: string = event.target.id;
-      const nextElementId: string | undefined = event.target.nextElementSibling?.id;
-      let id2 = '';
-
-      if (!nextElementId || id.length > nextElementId.length) {
-        const posLastColon = id.lastIndexOf(':');
-        const posLastHyphen = id.lastIndexOf('*');
-        const posLast = Math.max(posLastColon, posLastHyphen);
-        const prefix = id.slice(0, posLast + 1);
-        const suffix = Number(id.slice(posLast + 1, id.length)) + 1;
-        id2 = `${prefix}${suffix}`;
-      } 
-      else if ( id.length < nextElementId.length ) {
-        const posLastColon = nextElementId.lastIndexOf(':');
-        const posLastHyphen = nextElementId.lastIndexOf('*');
-        const posLast = Math.max(posLastColon, posLastHyphen);
-        const prefix = nextElementId.slice(0, posLast + 1);
-        const suffix = Number(nextElementId.slice(posLast + 1, nextElementId.length)) - 1;
-        id2 = `${prefix}${suffix}`;
-      }
-      else if ( id.length === nextElementId.length ) {
-        id2 = `${id}*${0}`;
-      } else {
-        alert('Error in onKeyDown, could not calculate id, given conditions were not met')
-      }
-
-      child.setAttribute('id', id2);
-
-      child.addEventListener('keydown', onKeyDown);
-      child.addEventListener('focusin', onFocused);
-      child.addEventListener('focusout', onBlur);
+      
+      const child = addSibling(event.target);
       event.target.parentElement.insertBefore(child, event.target.nextSibling);
       // event.target.focusout();
       child.focus();
