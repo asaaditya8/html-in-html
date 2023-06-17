@@ -51,6 +51,28 @@
   box-sizing: border-box;
 }
 
+.kid:hover {
+  border: dashed 1px #245;
+}
+
+.welcome {
+  position: relative;
+}
+
+.welcome::before {
+  min-width: 12px;
+  min-height: 12px;
+  content: 'Place here';
+  border: dashed 1px #a77;
+  color: #a77;
+  background-color: rgba(255, 255, 255, 0.1);
+  padding: 0 1em;
+}
+
+.faltu {
+  color: #484;
+}
+
 [data-placeholder]:empty:before{
   content: attr(data-placeholder);
   color: #888;

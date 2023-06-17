@@ -1,48 +1,126 @@
 import { useArrayState } from 'rooks'
 import './App.css'
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useKey } from 'rooks';
 
-type NewChild = {
-  prev_id: string,
-  current_id: string,
-  id: string,
-  content: string,
-}
+const displayMatrix: Map<string, string> =  new Map([
+    ['block', 'inline'],
+    ['inline', 'inline-block'],
+    ['inline-block', 'flex'],
+    ['flex', 'inline-flex'],
+    ['inline-flex', 'grid'],
+    ['grid', 'inline-grid'],
+    ['inline-grid', 'flow-root'],
+    ['flow-root', 'block]'],
+]);
+
+const colorMatrix = new Map([
+  ['rgb(170, 17, 221)', 
+  '#842'],
+  ['rgb(136, 68, 34)', 
+  '#484'],
+  ['rgb(68, 136, 68)', 
+  '#3a4'],
+  ['rgb(51, 170, 68)', 
+  '#386'],
+  ['rgb(51, 136, 102)', 
+  '#36a'],
+  ['rgb(51, 102, 170)', 
+  '#a1d'],
+]);
 
 
 function App() {
 
   const [cursorAt, setCursorAt] = useState<string>('div-0');
   const [cursorFocused, setCursorFocused] = useState<boolean>(false);
-  const [register, registerControls] = useArrayState<Element | null>([null, null, null, null, null]);
+  const register = useRef<(Element | null) []>([null, null, null, null, null]);
+  const colorRegister = useRef<string | null>(null);
+  const mode = useRef<string>('Insert');
+
+  const setColorRegister = (color: string) => {
+    colorRegister.current = color;
+  }
+  
+  const setMode = (value: string) => {
+    mode.current = value;
+  }
+  
+  const updateMode = (mode: string) => {
+    setMode(mode);
+    let element = document.getElementById('div');
+    if (mode === 'Insert') {
+      if (element) {
+        updateAttribute(element, 'contentEditable', 'true');
+        updateAttribute(element, 'draggable', 'false');
+      }
+    }
+    if (mode === 'Move' || mode === 'ColorPicker' || mode === 'ColorBucket') {
+      if (element) {
+        updateAttribute(element, 'contentEditable', 'false');
+        updateAttribute(element, 'draggable', 'false');
+      }
+    }
+    if (mode === 'Move') {
+      if (element) {
+        updateAttribute(element, 'draggable', 'true');
+      }
+      
+    }
+  }
   // const [display, setDisplay] = useState<string>('block');
 
   const updateDisplay = (display: string) => {
-    if (display === 'block') {
-      return 'inline';
-    }
-    if (display === 'inline') {
-      return 'inline-block';
-    }
-    if (display === 'inline-block') {
-      return 'flex';
-    }
-    if (display === 'flex') {
-      return 'inline-flex';
-    }
-    if (display === 'inline-flex') {
-      return 'grid';
-    }
-    if (display === 'grid') {
-      return 'inline-grid';
-    }
-    if (display === 'inline-grid') {
-      return 'flow-root';
+    if (displayMatrix.has(display)) {
+      return displayMatrix.get(display);
     }
     else {
       return 'block';
     }
+  }
+  
+  const updateBgColor = (color: string) => {
+    const newColor = colorMatrix.get(color); 
+    console.log(color, newColor);
+    return newColor ? newColor : '#842';
+  }
+  
+  const onClick = (event: any) => {
+    event.preventDefault();
+    if (mode.current === 'ColorBucket') {
+      event.target.style.backgroundColor = colorRegister.current;
+    }
+    if (mode.current === 'ColorPicker') {
+      // event.preventDefault();
+      setColorRegister(event.target.style.backgroundColor);
+    }
+    console.log(event.target.id, colorRegister.current, mode.current, event.target.style.backgroundColor)
+  }
+  
+  const onDragStart = (event: any) => {
+    // @ts-ignore
+    console.log('onDragStart', event.target?.id);
+  }
+  
+  const onDragEnter = (event: any) => {
+    // @ts-ignore
+    let target = event.target;
+    target.classList.add('welcome');
+    target.classList.add('welcome::before');
+    console.log('onDragEnter', event.target?.id);
+  }
+  
+  const onDragExit = (event: any) => {
+    // @ts-ignore
+    let target = event.target;
+    target.classList.remove('welcome');
+    target.classList.remove('welcome::before');
+    console.log('onDragExit', event.target?.id);
+  }
+
+  const onDragEnd = (event: any) => {
+    // @ts-ignore
+    console.log('onDragEnd', event.target?.id);
   }
 
   const updateCursorAt = (id: string) => {
@@ -91,15 +169,21 @@ function App() {
     reindex(parent);
 
   }
-
+  
   const createNewSibling = () => {
     let child = document.createElement('div');
     child.className = 'kid';
     child.setAttribute('contentEditable', 'true');
+    child.setAttribute('draggable', 'false');
     child.setAttribute('data-placeholder', 'Input');
+    child.addEventListener('click', onClick);
     child.addEventListener('keydown', onKeyDown);
     child.addEventListener('focusin', onFocused);
     child.addEventListener('focusout', onBlur);
+    child.addEventListener('dragstart', onDragStart);
+    child.addEventListener('dragenter', onDragEnter);
+    child.addEventListener('dragexit', onDragExit);
+    child.addEventListener('dragend', onDragEnd);
     return child
   }
 
@@ -143,14 +227,29 @@ function App() {
 
     const children = element.childNodes;
     for (let i = 0; i < children.length; i++) {
+      // @ts-ignore
       addClassToLeaves(children[i], cls);
     }
   }
+
+  const updateAttribute = (element: HTMLElement, attr: string, value: string) => {
+    if (element.hasAttribute(attr)) {
+      element.setAttribute(attr, value);
+    }
+
+    const children = element.children;
+    for (let i = 0; i < children.length; i++) {
+      // @ts-ignore
+      updateAttribute(children[i], attr, value);
+    }
+  }
+
 
   const cloneElement = (element: Element) => {
     let clone = element.cloneNode(true);
 
     const addListeners = (element: Element) => {
+      // @ts-ignore
       if (element.isContentEditable) {
         element.addEventListener('keydown', onKeyDown);
         element.addEventListener('focusin', onFocused);
@@ -161,11 +260,13 @@ function App() {
 
       const children = element.childNodes;
       for (let i = 0; i < children.length; i++) {
+      // @ts-ignore
         addListeners(children[i]);
       }
 
     }
     
+      // @ts-ignore
     addListeners(clone);
     return clone;
   }
@@ -178,6 +279,7 @@ function App() {
 
     const children = element.childNodes;
     for (let i = 0; i < children.length; i++) {
+      // @ts-ignore
       clearContent(children[i]);
     }
   }
@@ -188,7 +290,7 @@ function App() {
       const key = event.code;
       if (key === 'KeyA' && cursorAt) {
         const id: string | undefined = document.getElementById(cursorAt)?.parentElement?.id;
-        if (id) {
+        if (id && id != 'root') {
           updateCursorAt(id);
         }
 
@@ -220,7 +322,8 @@ function App() {
         event.preventDefault();
         const ele = document.getElementById(cursorAt);
         if (ele) {
-          registerControls.replaceItemAtIndex(0, ele);
+          register.current = [ele, ...register.current.slice(1)]
+          // registerControls.replaceItemAtIndex(0, ele);
         }
       }
       if (key === 'KeyP' && cursorAt) {
@@ -228,10 +331,14 @@ function App() {
         // lets experiment with only layout
         event.preventDefault();
         const ele = document.getElementById(cursorAt);
-        if (ele && register[0]) {
-          let sibling = cloneElement(register[0]);
+        if (ele && register.current[0]) {
+          let sibling = cloneElement(register.current[0]);
+
+          // @ts-ignore
           clearContent(sibling);
+          // @ts-ignore
           addClassToLeaves(sibling, 'empty');
+          // @ts-ignore
           addSibling(ele, sibling);
         }
       }
@@ -246,6 +353,33 @@ function App() {
           addParent(ele);
         }
       }
+      if (key === 'KeyM' && cursorAt) {
+        event.preventDefault();
+        updateMode('Move');
+      }
+      if (key === 'KeyI' && cursorAt) {
+        event.preventDefault();
+        updateMode('Insert');
+      }
+      if (key === 'KeyU' && cursorAt) {
+        event.preventDefault();
+        updateMode('ColorPicker');
+      }
+      if (key === 'KeyB' && cursorAt) {
+        event.preventDefault();
+        updateMode('ColorBucket');
+      }
+      if (key === 'KeyC' && cursorAt) {
+        event.preventDefault();
+        const ele = document.getElementById(cursorAt);
+        if (ele) {
+          console.log(ele.style.backgroundColor);
+          ele.style.backgroundColor = updateBgColor(ele.style.backgroundColor);
+          // ele.style.backgroundColor = '#484';
+          console.log(ele.style.backgroundColor);
+        }
+
+      }
 
 
     }
@@ -253,7 +387,7 @@ function App() {
     // event.preventDefault();
   }
 
-  useKey(['KeyA', 'KeyY', 'KeyP', 'KeyJ', 'KeyK', 'KeyL', 'Enter', 'KeyD'], onKeyDownBody);
+  useKey(['KeyA', 'KeyC', 'KeyU', 'KeyB', 'KeyY', 'KeyM', 'KeyI', 'KeyP', 'KeyJ', 'KeyK', 'KeyL', 'Enter', 'KeyD'], onKeyDownBody);
   // document.addEventListener('keydown', onKeyDownBody);
 
 
@@ -284,13 +418,19 @@ function App() {
       >
 
       </div>
-      <div id="div">
+      <div id="div" className='kid'>
         <div
           className='kid'
           id='div*0'
           contentEditable="true"
+          draggable="false"
           onKeyDown={onKeyDown}
           onFocus={onFocused}
+          onClick={onClick}
+          onDragStart={onDragStart}
+          onDragEnter={onDragEnter}
+          onDragExit={onDragExit}
+          onDragEnd={onDragEnd}
           data-placeholder='Input'
         >
         </div>
