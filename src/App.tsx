@@ -2,50 +2,67 @@ import { useArrayState } from 'rooks'
 import './App.css'
 import { useRef, useState } from 'react';
 import { useKey } from 'rooks';
+import { PropertyPanel, properties, propertiesMeta } from './PropertySidebar'
 
-const displayMatrix: Map<string, string> =  new Map([
-    ['block', 'inline'],
-    ['inline', 'inline-block'],
-    ['inline-block', 'flex'],
-    ['flex', 'inline-flex'],
-    ['inline-flex', 'grid'],
-    ['grid', 'inline-grid'],
-    ['inline-grid', 'flow-root'],
-    ['flow-root', 'block]'],
+const displayMatrix: Map<string, string> = new Map([
+  ['block', 'inline'],
+  ['inline', 'inline-block'],
+  ['inline-block', 'flex'],
+  ['flex', 'inline-flex'],
+  ['inline-flex', 'grid'],
+  ['grid', 'inline-grid'],
+  ['inline-grid', 'flow-root'],
+  ['flow-root', 'block]'],
 ]);
 
 const colorMatrix = new Map([
-  ['rgb(170, 17, 221)', 
-  '#842'],
-  ['rgb(136, 68, 34)', 
-  '#484'],
-  ['rgb(68, 136, 68)', 
-  '#3a4'],
-  ['rgb(51, 170, 68)', 
-  '#386'],
-  ['rgb(51, 136, 102)', 
-  '#36a'],
-  ['rgb(51, 102, 170)', 
-  '#a1d'],
+  ['rgb(170, 17, 221)',
+    '#842'],
+  ['rgb(136, 68, 34)',
+    '#484'],
+  ['rgb(68, 136, 68)',
+    '#3a4'],
+  ['rgb(51, 170, 68)',
+    '#386'],
+  ['rgb(51, 136, 102)',
+    '#36a'],
+  ['rgb(51, 102, 170)',
+    '#a1d'],
 ]);
 
 
 function App() {
 
-  const [cursorAt, setCursorAt] = useState<string>('div-0');
-  const [cursorFocused, setCursorFocused] = useState<boolean>(false);
-  const register = useRef<(Element | null) []>([null, null, null, null, null]);
+  // content-wrapper, right-sidebar, cmd-line
+  const [cursorIn, setCursorIn] = useState<string>('content-wrapper');
+  // stores idx of items in the right sidebar
+  const [styleIdx, setStyleIdx] = useState<number>(0);
+  // for scrolling into view
+  const rightSidebarRef = useRef(null);
+  const [styleValueIdx, styleValueIdxControls] = useArrayState<number>(Array(propertiesMeta.length).fill(0));
+  // stores div ids in the content-wrapper
+  const [cursorAt, setCursorAt] = useState<string>('div*0');
+  // focused means being edited
+  const cursorFocused = useRef<boolean>(false);
+  // to copy nodes
+  const register = useRef<(Element | null)[]>([null, null, null, null, null]);
+  // to copy color
   const colorRegister = useRef<string | null>(null);
+  // Insert, Move, ColorPicker, ColorBucket
   const mode = useRef<string>('Insert');
+
+  const setCursorFocused = (value: boolean) => {
+    cursorFocused.current = value;
+  }
 
   const setColorRegister = (color: string) => {
     colorRegister.current = color;
   }
-  
+
   const setMode = (value: string) => {
     mode.current = value;
   }
-  
+
   const updateMode = (mode: string) => {
     setMode(mode);
     let element = document.getElementById('div');
@@ -65,10 +82,33 @@ function App() {
       if (element) {
         updateAttribute(element, 'draggable', 'true');
       }
-      
+
     }
   }
   // const [display, setDisplay] = useState<string>('block');
+  const styleCursorAt = (i: number, j: number) => {
+    const ele = document.getElementById(cursorAt);
+    if (ele) {
+      computeStyle(i, j).map((item) => {
+        console.log('computed result', item.styleName, item.styleValue);
+        ele.style[item.styleName] = item.styleValue;
+        // ele.style.
+      });
+    } else {
+      console.log('no element!')
+    }
+  }
+  
+  const computeStyle = (i: number, j: number) => {
+    const styleName = propertiesMeta[i].item;
+    const styleValue = properties[styleName][j];
+    // console.log('in compute',styleName, styleValue);
+    if (styleName === 'spacing' || styleName === '') {
+      return []
+    } else {
+      return [{styleName: styleName, styleValue: styleValue}]
+    }  
+  }
 
   const updateDisplay = (display: string) => {
     if (displayMatrix.has(display)) {
@@ -78,13 +118,13 @@ function App() {
       return 'block';
     }
   }
-  
+
   const updateBgColor = (color: string) => {
-    const newColor = colorMatrix.get(color); 
+    const newColor = colorMatrix.get(color);
     console.log(color, newColor);
     return newColor ? newColor : '#842';
   }
-  
+
   const onClick = (event: any) => {
     event.preventDefault();
     if (mode.current === 'ColorBucket') {
@@ -96,12 +136,12 @@ function App() {
     }
     console.log(event.target.id, colorRegister.current, mode.current, event.target.style.backgroundColor)
   }
-  
+
   const onDragStart = (event: any) => {
     // @ts-ignore
     console.log('onDragStart', event.target?.id);
   }
-  
+
   const onDragEnter = (event: any) => {
     // @ts-ignore
     let target = event.target;
@@ -109,7 +149,7 @@ function App() {
     target.classList.add('welcome::before');
     console.log('onDragEnter', event.target?.id);
   }
-  
+
   const onDragExit = (event: any) => {
     // @ts-ignore
     let target = event.target;
@@ -167,9 +207,9 @@ function App() {
     parent.appendChild(ele);
 
     reindex(parent);
-
+    return parent;
   }
-  
+
   const createNewSibling = () => {
     let child = document.createElement('div');
     child.className = 'kid';
@@ -260,13 +300,13 @@ function App() {
 
       const children = element.childNodes;
       for (let i = 0; i < children.length; i++) {
-      // @ts-ignore
+        // @ts-ignore
         addListeners(children[i]);
       }
 
     }
-    
-      // @ts-ignore
+
+    // @ts-ignore
     addListeners(clone);
     return clone;
   }
@@ -286,35 +326,78 @@ function App() {
 
   const onKeyDownBody = (event: any) => {
     // event.preventDefault();
-    if (!cursorFocused) {
+    if (!cursorFocused.current) {
       const key = event.code;
       if (key === 'KeyA' && cursorAt) {
         const id: string | undefined = document.getElementById(cursorAt)?.parentElement?.id;
-        if (id && id != 'root') {
+        if (id && id != 'content-wrapper') {
           updateCursorAt(id);
         }
 
       }
       if (key === 'KeyJ' && cursorAt) {
         event.preventDefault();
-        const id: string | undefined = document.getElementById(cursorAt)?.nextElementSibling?.id;
-        if (id) {
-          // setCurrFocused(id);
-          updateCursorAt(id);
+        // setCurrFocused(id);
+        if (cursorIn === 'right-sidebar') {
+          const newIdx = (styleIdx + 1) % propertiesMeta.length;
+          setStyleIdx(newIdx);
+          // @ts-ignore
+          rightSidebarRef.current?.children[newIdx].scrollIntoView();
+          
+          styleCursorAt(newIdx, styleValueIdx[newIdx]);
+        } else {
+
+          const ele = document.getElementById(cursorAt)?.nextElementSibling;
+          ele?.scrollIntoView();
+          const id: string | undefined = ele?.id;
+          if (id) {
+            updateCursorAt(id);
+          }
         }
       }
       if (key === 'KeyK' && cursorAt) {
         event.preventDefault();
-        const id: string | undefined = document.getElementById(cursorAt)?.previousElementSibling?.id;
-        if (id) {
-          updateCursorAt(id);
+        if (cursorIn === 'right-sidebar') {
+          const newIdx = (styleIdx - 1 + propertiesMeta.length) % propertiesMeta.length;
+          setStyleIdx(newIdx);
+          // @ts-ignore
+          rightSidebarRef.current?.children[newIdx].scrollIntoView();
+
+          styleCursorAt(newIdx, styleValueIdx[newIdx]);
+        } else {
+          const ele = document.getElementById(cursorAt)?.previousElementSibling;
+          ele?.scrollIntoView();
+          const id: string | undefined = ele?.id;
+          if (id) {
+            updateCursorAt(id);
+          }
         }
+      }
+      if (key === 'KeyH' && cursorAt) {
+        event.preventDefault();
+        if (cursorIn === 'right-sidebar') {
+          const newIdx = (styleValueIdx[styleIdx] - 1 + propertiesMeta[styleIdx].length) % propertiesMeta[styleIdx].length;
+          styleValueIdxControls.replaceItemAtIndex(styleIdx, newIdx);
+          styleCursorAt(styleIdx, newIdx);
+        } 
       }
       if (key === 'KeyL' && cursorAt) {
         event.preventDefault();
-        const ele = document.getElementById(cursorAt);
-        if (ele) {
-          ele.style.display = updateDisplay(ele.style.display);
+        if (cursorIn === 'right-sidebar') {
+          const newIdx = (styleValueIdx[styleIdx] + 1) % propertiesMeta[styleIdx].length;
+          styleValueIdxControls.replaceItemAtIndex(styleIdx, newIdx);
+          styleCursorAt(styleIdx, newIdx);
+        } 
+      }
+      if (key === 'KeyC' && cursorAt) {
+        event.preventDefault();
+        // const ele = document.getElementById(cursorAt);
+        if (cursorIn === 'content-wrapper') {
+
+          setCursorIn('right-sidebar');
+          // ele.style.display = updateDisplay(ele.style.display);
+        } else {
+          setCursorIn('content-wrapper')
         }
 
       }
@@ -340,6 +423,8 @@ function App() {
           addClassToLeaves(sibling, 'empty');
           // @ts-ignore
           addSibling(ele, sibling);
+          // @ts-ignore
+          updateCursorAt(sibling.id);
         }
       }
       if (key === 'Enter' && cursorAt) {
@@ -350,7 +435,9 @@ function App() {
         event.preventDefault();
         let ele = document.getElementById(cursorAt);
         if (ele) {
-          addParent(ele);
+          const parent = addParent(ele);
+          // @ts-ignore
+          updateCursorAt(ele.id);
         }
       }
       if (key === 'KeyM' && cursorAt) {
@@ -369,17 +456,17 @@ function App() {
         event.preventDefault();
         updateMode('ColorBucket');
       }
-      if (key === 'KeyC' && cursorAt) {
-        event.preventDefault();
-        const ele = document.getElementById(cursorAt);
-        if (ele) {
-          console.log(ele.style.backgroundColor);
-          ele.style.backgroundColor = updateBgColor(ele.style.backgroundColor);
-          // ele.style.backgroundColor = '#484';
-          console.log(ele.style.backgroundColor);
-        }
+      // if (key === 'KeyC' && cursorAt) {
+      //   event.preventDefault();
+      //   const ele = document.getElementById(cursorAt);
+      //   if (ele) {
+      //     console.log(ele.style.backgroundColor);
+      //     ele.style.backgroundColor = updateBgColor(ele.style.backgroundColor);
+      //     // ele.style.backgroundColor = '#484';
+      //     console.log(ele.style.backgroundColor);
+      //   }
 
-      }
+      // }
 
 
     }
@@ -387,7 +474,7 @@ function App() {
     // event.preventDefault();
   }
 
-  useKey(['KeyA', 'KeyC', 'KeyU', 'KeyB', 'KeyY', 'KeyM', 'KeyI', 'KeyP', 'KeyJ', 'KeyK', 'KeyL', 'Enter', 'KeyD'], onKeyDownBody);
+  useKey(['KeyA', 'KeyC', 'KeyU', 'KeyB', 'KeyY', 'KeyM', 'KeyI', 'KeyP', 'KeyH', 'KeyJ', 'KeyK', 'KeyL', 'Enter', 'KeyD'], onKeyDownBody);
   // document.addEventListener('keydown', onKeyDownBody);
 
 
@@ -418,22 +505,35 @@ function App() {
       >
 
       </div>
-      <div id="div" className='kid'>
-        <div
-          className='kid'
-          id='div*0'
-          contentEditable="true"
-          draggable="false"
-          onKeyDown={onKeyDown}
-          onFocus={onFocused}
-          onClick={onClick}
-          onDragStart={onDragStart}
-          onDragEnter={onDragEnter}
-          onDragExit={onDragExit}
-          onDragEnd={onDragEnd}
-          data-placeholder='Input'
-        >
+
+      <div id='right-sidebar' className='right-sidebar' ref={rightSidebarRef}>
+         {<PropertyPanel styleIdx={styleIdx} styleValueIdx={styleValueIdx} />}
+      </div>
+
+      <div id='content-screen' className='content-screen'>
+        <div id='content-wrapper' className='content-wrapper'>
+
+          <div id="div" className='kid'>
+            <div
+              className='kid'
+              id='div*0'
+              contentEditable="true"
+              draggable="false"
+              onKeyDown={onKeyDown}
+              onFocus={onFocused}
+              onClick={onClick}
+              onDragStart={onDragStart}
+              onDragEnter={onDragEnter}
+              onDragExit={onDragExit}
+              onDragEnd={onDragEnd}
+              data-placeholder='Input'
+            >
+            </div>
+          </div>
+
         </div>
+
+
       </div>
       <button onClick={() => { }}>
         Button
