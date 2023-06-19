@@ -72,6 +72,8 @@ export const properties: any = {
     borderColorL: saturation_lightness(),
 };
 
+export const properties2Idx = new Map(Object.keys(properties).map((key, i) => [key, i]));
+
 export const propertiesMeta = Object.keys(properties).map((key) => {
     const obj = {
         item: key,
@@ -83,7 +85,6 @@ export const propertiesMeta = Object.keys(properties).map((key) => {
 
 export const PropertyPanel = (props: any) => {
     const { styleIdx, styleValueIdx } = props;
-console.log(propertiesMeta.length);
 
     let finalKeys: Array<string> = [
         'borderStyle',
@@ -140,6 +141,10 @@ console.log(propertiesMeta.length);
         finalKeys.push(`${colorItem}ColorH`)
         finalKeys.push(`${colorItem}ColorS`)
         finalKeys.push(`${colorItem}ColorL`)
+    }
+    
+    const NextPropertyItem = () => {
+        
     }
 
     return (
