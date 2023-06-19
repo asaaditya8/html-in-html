@@ -1,5 +1,5 @@
 import { MutableRefObject, Ref } from "react";
-import { properties, propertiesMeta } from "../PropertySidebar";
+import { properties, properties2Idx, propertiesMeta } from "../PropertySidebar";
 
 
 export const onDragStart = (event: any) => {
@@ -208,6 +208,7 @@ export const styleCursorAt = (i: number, j: number, cursorAt: string) => {
   if (ele) {
     computeStyle(i, j).map((item) => {
       console.log('computed result', item.styleName, item.styleValue);
+      // @ts-ignore
       ele.style[item.styleName] = item.styleValue;
       // ele.style.
     });
@@ -220,8 +221,14 @@ export const computeStyle = (i: number, j: number) => {
   const styleName = propertiesMeta[i].item;
   const styleValue = properties[styleName][j];
   // console.log('in compute',styleName, styleValue);
-  if (styleName === 'spacing' || styleName === '') {
-    return []
+  if (styleName === 'spacing' ) {
+      return []
+  }
+  else if (styleName === 'marginSpacingItem') {
+    const unit = properties['marginTopBotSpacingUnit'][0];
+    const value = properties['marginTopBotSpacingAmt'][0];
+    console.log(value, unit);
+    return [{styleName: 'margin', styleValue: ``}]
   } else {
     return [{styleName: styleName, styleValue: styleValue}]
   }  

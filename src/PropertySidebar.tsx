@@ -1,3 +1,5 @@
+import { useRef, useState } from "react";
+import { useArrayState } from "rooks";
 
 function Range(start: number, step: number, count: number) {
     return Array(count).fill(start).map((x, y) => (x + y * step).toFixed(1))
@@ -83,10 +85,14 @@ export const propertiesMeta = Object.keys(properties).map((key) => {
     return obj;
 });
 
-export const PropertyPanel = (props: any) => {
-    const { styleIdx, styleValueIdx } = props;
+export const PropertyPanel = () => {
+    // stores idx of items in the right sidebar
+    const [styleKey, setStyleKey] = useState<string>('display');
+    const [styleValueIdx, styleValueIdxControls] = useArrayState<number>(Array(propertiesMeta.length).fill(0));
+    // for scrolling into view
+    const rightSidebarRef = useRef(null);
 
-    let finalKeys: Array<string> = [
+    let displayedKeys: Array<string> = [
         'borderStyle',
         'borderR',
         'alignItems',
@@ -109,13 +115,13 @@ export const PropertyPanel = (props: any) => {
     }
 
     if (spacingType) {
-        finalKeys.push(spacingType);
+        displayedKeys.push(spacingType);
     }
 
     let spacingDir = properties[spacingType][styleValueIdx[spacingTypeIdx]];
-    if (spacingDir === 'top-bottom' ) {
+    if (spacingDir === 'top-bottom') {
         spacingDir = 'TopBot'
-    } else if (spacingDir === 'left-right' ) {
+    } else if (spacingDir === 'left-right') {
         spacingDir = 'LeftRi'
     } else if (spacingDir === 'top') {
         spacingDir = 'Top'
@@ -128,48 +134,103 @@ export const PropertyPanel = (props: any) => {
     }
 
     if (spacingDir) {
-        finalKeys.push(`${spacingItem}${spacingDir}SpacingUnit`)
-        finalKeys.push(`${spacingItem}${spacingDir}SpacingAmt`)
+        displayedKeys.push(`${spacingItem}${spacingDir}SpacingUnit`)
+        displayedKeys.push(`${spacingItem}${spacingDir}SpacingAmt`)
     }
 
-    finalKeys.push('colorItem');
-    
+    displayedKeys.push('colorItem');
+
     const colorIdx = 33;
     const colorItem = properties.colorItem[styleValueIdx[colorIdx]];
     if (colorItem) {
-        finalKeys.push(`${colorItem}ColorA`)
-        finalKeys.push(`${colorItem}ColorH`)
-        finalKeys.push(`${colorItem}ColorS`)
-        finalKeys.push(`${colorItem}ColorL`)
-    }
-    
-    const NextPropertyItem = () => {
-        
+        displayedKeys.push(`${colorItem}ColorA`)
+        displayedKeys.push(`${colorItem}ColorH`)
+        displayedKeys.push(`${colorItem}ColorS`)
+        displayedKeys.push(`${colorItem}ColorL`)
     }
 
-    return (
-    <>
-        {Object.keys(properties).map((key, i) => [key, i]).filter(param => finalKeys.includes(param[0])).map(([key ,i], _) =>
-            <div id='right-sidebar-item' key={i}>
-                <div className='sidebar-item-header'>
-                    {key}
-                </div>
-                <div className='sidebar-item-content'>
-                    {properties[key].map((value: any, j: number) =>
-                        <div
-                            key={j}
-                            style={{
-                                border: i === styleIdx && j === styleValueIdx[i] ? '1px solid' : 'none',
-                                display: 'inline-flex',
-                                padding: '2px'
-                            }}>
-                            {value}
+    const displayedKeys2Idx = new Map(displayedKeys.map((key, i) => [key, i]));
+
+    const NextPropertyItem = () => {
+        const curKeyIdx = displayedKeys2Idx.get(styleKey);
+        const nextKeyIdx = ((curKeyIdx ? curKeyIdx : 0) + 1 + displayedKeys.length) % displayedKeys.length;
+        const nextKey = displayedKeys[nextKeyIdx];
+        setStyleKey(nextKey);
+        // to calculate style we need the index of the properties array
+        const retKeyIdx = properties2Idx.get(nextKey) || 0;
+        const retValIdx = styleValueIdx[retKeyIdx];
+        // scroll
+        //@ts-ignore
+        rightSidebarRef.current?.children[nextKeyIdx].scrollIntoView();
+        return { retKeyIdx, retValIdx };
+    }
+
+    const PrevPropertyItem = () => {
+        const curKeyIdx = displayedKeys2Idx.get(styleKey);
+        const prevKeyIdx = ((curKeyIdx ? curKeyIdx : 0) - 1 + displayedKeys.length) % displayedKeys.length;
+        const prevKey = displayedKeys[prevKeyIdx];
+        setStyleKey(prevKey);
+        // to calculate style we need the index of the properties array
+        const retKeyIdx = properties2Idx.get(prevKey) || 0;
+        const retValIdx = styleValueIdx[retKeyIdx];
+        // scroll
+        //@ts-ignore
+        rightSidebarRef.current?.children[prevKeyIdx].scrollIntoView();
+        return { retKeyIdx, retValIdx };
+    }
+
+    const NextPropertyValue = () => {
+        let curKeyIdx = properties2Idx.get(styleKey);
+        curKeyIdx = (curKeyIdx ? curKeyIdx : 0);
+        const newValueIdx = (styleValueIdx[curKeyIdx] + 1 + propertiesMeta[curKeyIdx].length) % propertiesMeta[curKeyIdx].length;
+        styleValueIdxControls.replaceItemAtIndex(curKeyIdx, newValueIdx);
+        // to calculate style we need the index of the properties array
+        return { retKeyIdx: curKeyIdx, retValIdx: newValueIdx };
+    }
+
+    const PrevPropertyValue = () => {
+        let curKeyIdx = properties2Idx.get(styleKey);
+        curKeyIdx = (curKeyIdx ? curKeyIdx : 0);
+        const newValueIdx = (styleValueIdx[curKeyIdx] - 1 + propertiesMeta[curKeyIdx].length) % propertiesMeta[curKeyIdx].length;
+        styleValueIdxControls.replaceItemAtIndex(curKeyIdx, newValueIdx);
+        // to calculate style we need the index of the properties array
+        return { retKeyIdx: curKeyIdx, retValIdx: newValueIdx };
+    }
+
+    return {
+        NextPropertyItem,
+        PrevPropertyItem,
+        NextPropertyValue,
+        PrevPropertyValue,
+        rightSidebarRef,
+        render: (
+            <>
+                {displayedKeys.map((key: string) => {
+                    const i = properties2Idx.get(key) || 0;
+                    return (
+                        <div id='right-sidebar-item' key={i}>
+                            <div className='sidebar-item-header'>
+                                {key}
+                            </div>
+                            <div className='sidebar-item-content'>
+                                {properties[key].map((value: any, j: number) =>
+                                    <div
+                                        key={j}
+                                        style={{
+                                            border: key === styleKey && j === styleValueIdx[i] ? '1px solid' : 'none',
+                                            display: 'inline-flex',
+                                            padding: '2px'
+                                        }}>
+                                        {value}
+                                    </div>
+                                )}
+                            </div>
                         </div>
-                    )}
-                </div>
-            </div>
-        )}
-    </>
-    )
+                    )
+                }
+                )}
+            </>
+        )
+    }
 
 }

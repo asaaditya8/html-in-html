@@ -11,11 +11,6 @@ function App() {
 
   // content-wrapper, right-sidebar, cmd-line
   const [cursorIn, setCursorIn] = useState<string>('content-wrapper');
-  // stores idx of items in the right sidebar
-  const [styleIdx, setStyleIdx] = useState<number>(0);
-  // for scrolling into view
-  const rightSidebarRef = useRef(null);
-  const [styleValueIdx, styleValueIdxControls] = useArrayState<number>(Array(propertiesMeta.length).fill(0));
   // stores div ids in the content-wrapper
   const [cursorAt, setCursorAt] = useState<string>('div*0');
   // focused means being edited
@@ -68,20 +63,29 @@ function App() {
     }
   }
   
+  const {
+        NextPropertyItem,
+        PrevPropertyItem,
+        NextPropertyValue,
+        PrevPropertyValue,
+        rightSidebarRef,
+        render: PropertyView
+  } = PropertyPanel();
+  
   const KeyDownBodyProps = {
         cursorFocused,
         setCursorFocused,
         cursorAt,
         setCursorAt,
         updateCursorAt,
-        styleIdx,
-        setStyleIdx,
-        styleValueIdx,
         cursorIn,
         setCursorIn,
         register,
         updateMode,
-        styleValueIdxControls,
+        NextPropertyItem,
+        PrevPropertyItem,
+        NextPropertyValue,
+        PrevPropertyValue,
     };
 
   useKey(['KeyA', 'KeyC', 'KeyU', 'KeyB', 'KeyY', 'KeyM', 'KeyI', 'KeyP', 'KeyH', 'KeyJ', 'KeyK', 'KeyL', 'Enter', 'KeyD'], (event) => onKeyDownBody(event, KeyDownBodyProps));
@@ -117,7 +121,7 @@ function App() {
       </div>
 
       <div id='right-sidebar' className='right-sidebar' ref={rightSidebarRef}>
-        {<PropertyPanel styleIdx={styleIdx} styleValueIdx={styleValueIdx} />}
+        {PropertyView}
       </div>
 
       <div id='content-screen' className='content-screen'>

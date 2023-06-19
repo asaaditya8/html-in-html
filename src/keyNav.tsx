@@ -5,11 +5,9 @@ import { propertiesMeta } from "./PropertySidebar";
 type CursorFocused = MutableRefObject<boolean>;
 type SetCursorFocused = (value: boolean) => void;
 type SetCursorAt = (id: string) => void;
-type SetStyleIdx = (value: number) => void;
 type UpdateCursorAt = (id: string) => void;
 type Register = MutableRefObject<(Element | null)[]>;
-  type UpdateMode = (mode: string) => void;
-  type StyleValueIdxControls = any;
+type UpdateMode = (mode: string) => void;
 
 type Props = {
     cursorFocused: CursorFocused,
@@ -17,14 +15,14 @@ type Props = {
     cursorAt: string,
     setCursorAt: SetCursorAt,
     updateCursorAt: UpdateCursorAt,
-    styleIdx: number,
-    setStyleIdx: SetStyleIdx,
-    styleValueIdx: number[],
     cursorIn: string,
     setCursorIn: (value: string) => void,
     register: Register,
     updateMode: UpdateMode,
-    styleValueIdxControls: StyleValueIdxControls,
+    NextPropertyItem: () => {retKeyIdx: number, retValIdx: number};
+    PrevPropertyItem: () => {retKeyIdx: number, retValIdx: number};
+    NextPropertyValue: () => {retKeyIdx: number, retValIdx: number};
+    PrevPropertyValue: () => {retKeyIdx: number, retValIdx: number};
 };
 
 export const onKeyDownBody = (event: any, props: Props) => {
@@ -34,14 +32,14 @@ export const onKeyDownBody = (event: any, props: Props) => {
         cursorAt,
         setCursorAt,
         updateCursorAt,
-        styleIdx,
-        setStyleIdx,
-        styleValueIdx,
         cursorIn,
         setCursorIn,
         register,
         updateMode,
-        styleValueIdxControls
+        NextPropertyItem,
+        PrevPropertyItem,
+        NextPropertyValue,
+        PrevPropertyValue,
     } = props;
     // event.preventDefault();
     if (!cursorFocused.current) {
@@ -55,14 +53,9 @@ export const onKeyDownBody = (event: any, props: Props) => {
         }
         if (key === 'KeyJ' && cursorAt) {
             event.preventDefault();
-            // setCurrFocused(id);
             if (cursorIn === 'right-sidebar') {
-                const newIdx = (styleIdx + 1) % propertiesMeta.length;
-                setStyleIdx(newIdx);
-                // @ts-ignore
-                rightSidebarRef.current?.children[newIdx].scrollIntoView();
-
-                styleCursorAt(newIdx, styleValueIdx[newIdx], cursorAt);
+                const {retKeyIdx: keyIdx, retValIdx: valueIdx} = NextPropertyItem();
+                styleCursorAt(keyIdx, valueIdx, cursorAt);
             } else {
 
                 const ele = document.getElementById(cursorAt)?.nextElementSibling;
@@ -76,12 +69,8 @@ export const onKeyDownBody = (event: any, props: Props) => {
         if (key === 'KeyK' && cursorAt) {
             event.preventDefault();
             if (cursorIn === 'right-sidebar') {
-                const newIdx = (styleIdx - 1 + propertiesMeta.length) % propertiesMeta.length;
-                setStyleIdx(newIdx);
-                // @ts-ignore
-                rightSidebarRef.current?.children[newIdx].scrollIntoView();
-
-                styleCursorAt(newIdx, styleValueIdx[newIdx], cursorAt);
+                const {retKeyIdx: keyIdx, retValIdx: valueIdx} = PrevPropertyItem();
+                styleCursorAt(keyIdx, valueIdx, cursorAt);
             } else {
                 const ele = document.getElementById(cursorAt)?.previousElementSibling;
                 ele?.scrollIntoView();
@@ -94,17 +83,15 @@ export const onKeyDownBody = (event: any, props: Props) => {
         if (key === 'KeyH' && cursorAt) {
             event.preventDefault();
             if (cursorIn === 'right-sidebar') {
-                const newIdx = (styleValueIdx[styleIdx] - 1 + propertiesMeta[styleIdx].length) % propertiesMeta[styleIdx].length;
-                styleValueIdxControls.replaceItemAtIndex(styleIdx, newIdx);
-                styleCursorAt(styleIdx, newIdx, cursorAt);
+                const {retKeyIdx: keyIdx, retValIdx: valueIdx} = PrevPropertyValue();
+                styleCursorAt(keyIdx, valueIdx, cursorAt);
             }
         }
         if (key === 'KeyL' && cursorAt) {
             event.preventDefault();
             if (cursorIn === 'right-sidebar') {
-                const newIdx = (styleValueIdx[styleIdx] + 1) % propertiesMeta[styleIdx].length;
-                styleValueIdxControls.replaceItemAtIndex(styleIdx, newIdx);
-                styleCursorAt(styleIdx, newIdx, cursorAt);
+                const {retKeyIdx: keyIdx, retValIdx: valueIdx} = NextPropertyValue();
+                styleCursorAt(keyIdx, valueIdx, cursorAt);
             }
         }
         if (key === 'KeyC' && cursorAt) {
