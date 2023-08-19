@@ -1,0 +1,14 @@
+# HTML Editing inside browser
+It is an expirement to test the concept of a WYSIWYG HTML editor using keyboard (vim) navigation, unlike Figma & other editors, this is not meant to be used by mouse.
+But it does take inspiration from Figma.
+
+## Motivation
+1. Keyboard Navigation
+2. Modal Editor
+3. WYSIWYG Editing
+
+## Use Case
+1. Presentation
+2. Documentation
+3. Blog
+4. Tutorial
